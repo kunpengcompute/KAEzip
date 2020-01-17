@@ -20,7 +20,7 @@ scripts:
   - wget https://www.zlib.net/zlib-1.2.11.tar.gz
   - tar -zxf zlib-1.2.11.tar.gz
   - cd zlib-1.2.11
-  - sudo patch -Np1 < ../kunpeng_zlib_1.2.8.patch
+  - sudo patch -Np1 < ../KAEzip/kunpeng_zlib_1.2.8.patch
   - sudo ./configure --prefix=/usr/local/zlib
   - sudo make -j10
   - sudo make install
