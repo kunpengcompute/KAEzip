@@ -4,7 +4,7 @@
 - [License](#license)
 - [Requirements](#requirements)
 - [Installation Instructions](#installation-instructions)
-- [More Information](#more information)
+- [More Information](#more-information)
 - [Copyright](#Copyright)
 
 ## Introduction
