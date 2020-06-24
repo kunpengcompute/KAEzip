@@ -8,20 +8,15 @@ addons:
 scripts:
 
   - cd ../
-  - wget https://github.com/kunpengcompute/KAEdriver/releases/download/v1.2.10/Kunpeng_KAE_driver-1.2.10.tar.gz
-  - tar -zxf Kunpeng_KAE_driver-1.2.10.tar.gz
-  - cd Kunpeng_KAE_driver/warpdrive
+  - git clone https://github.com/kunpengcompute/KAEdriver.git
+  - cd KAEdriver/warpdrive
   - sudo sh autogen.sh 
   - sudo ./configure 
   - sudo make 
   - sudo make install
-  
-  - cd ../../
-  - wget https://www.zlib.net/zlib-1.2.11.tar.gz
-  - tar -zxf zlib-1.2.11.tar.gz
-  - cd zlib-1.2.11
-  - sudo patch -Np1 < ../KAEzip/kunpeng_zlib_1.2.10.patch
-  - sudo ./configure --prefix=/usr/local/zlib
-  - sudo make -j10
-  - sudo make install
+
+  - sudo echo "start build kaezip"
+  - cd ../../KAEzip  
+  - sudo bash setup.sh install
+
   
