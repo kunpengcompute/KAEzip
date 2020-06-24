@@ -7,5 +7,7 @@ addons:
 
 scripts:
 
+  - sudo echo "start build kaezip"
   - sudo bash setup.sh install
+
   
