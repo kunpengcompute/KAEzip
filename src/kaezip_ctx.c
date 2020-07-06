@@ -356,7 +356,7 @@ static void kaezip_state_machine_trans(kaezip_ctx_t *kz_ctx)
         case KAEZIP_COMP_DOING:
             kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
         case KAEZIP_COMP_CRC_UNCHECK:
-            if (kz_ctx->remain == 0) {
+            if (kz_ctx->remain == 0 && kz_ctx->flush == WCRYPTO_FINISH) {
                 kaezip_deflate_addcrc(kz_ctx);
                 kz_ctx->status = (kz_ctx->end_block.remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
             }
