@@ -68,7 +68,7 @@ int ZEXPORT kz_inflateInit2_(z_streamp strm, int windowBits, const char *version
         return Z_OK;
     }
     
-    kaezip_ctx->status = KAEZIP_COMP_INIT;
+    kaezip_ctx->status = KAEZIP_DECOMP_INIT;
     strm->reserved = (uLong)kaezip_ctx;
 
     US_DEBUG("kae zip inflate init success, kaezip_ctx %p, kaezip_ctx->comp_alg_type %s!",
@@ -84,12 +84,12 @@ static int kaezip_check_strm_truely_end(z_streamp strm)
     KAEZIP_RETURN_FAIL_IF(kaezip_ctx == NULL, "kaezip ctx is NULL.", Z_ERRNO);
 
     if (strm->avail_in == 1 
-        && kaezip_ctx->status == KAEZIP_COMP_END) {
+        && kaezip_ctx->status == KAEZIP_DECOMP_END) {
         strm->avail_in = 0;
     }
 
     if (strm->avail_in == 0 
-        && kaezip_ctx->status == KAEZIP_COMP_END_BUT_DATAREMAIN) {
+        && kaezip_ctx->status == KAEZIP_DECOMP_END_BUT_DATAREMAIN) {
         strm->avail_in = 1;
     }
     return KAEZIP_SUCCESS;
@@ -113,11 +113,11 @@ int ZEXPORT kz_inflate(z_streamp strm, int flush)
         KAEZIP_UPDATE_ZSTREAM_IN(strm, kaezip_ctx->consumed);
         KAEZIP_UPDATE_ZSTREAM_OUT(strm, kaezip_ctx->produced);
 
-        if (kaezip_ctx->status == KAEZIP_COMP_VERIFY_ERR) {
+        if (kaezip_ctx->status == KAEZIP_DECOMP_VERIFY_ERR) {
             return Z_DATA_ERROR;
         }
         
-        if (kaezip_ctx->status == KAEZIP_COMP_END) {
+        if (kaezip_ctx->status == KAEZIP_DECOMP_END) {
             return Z_STREAM_END;
         }
     } while (strm->avail_out != 0 && strm->avail_in != 0);
@@ -175,7 +175,7 @@ static int kaezip_do_inflate(z_streamp strm, int flush)
     }
 
     //the firsh input z stream, should skip the format header, for hardware incompatible
-    if (kaezip_ctx->status == KAEZIP_COMP_INIT) {
+    if (kaezip_ctx->status == KAEZIP_DECOMP_INIT) {
         const uint32_t fmt_header_sz = kaezip_fmt_header_sz(kaezip_ctx->comp_alg_type);
         if (kaezip_ctx->header_pos + kaezip_ctx->in_len <= fmt_header_sz) {
             kaezip_ctx->header_pos += kaezip_ctx->in_len;
@@ -199,6 +199,10 @@ static int kaezip_do_inflate(z_streamp strm, int flush)
         return KAEZIP_FAILED;
     }
     
+    US_DEBUG("kaezip do inflate avail_in %u, avail_out %u, consumed %u, produced %u, remain %u, status %d, flush %d", 
+        strm->avail_in, strm->avail_out, kaezip_ctx->consumed, kaezip_ctx->produced, 
+        kaezip_ctx->remain, kaezip_ctx->status, flush);
+        
     return KAEZIP_SUCCESS;
 }
 
