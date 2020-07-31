@@ -118,6 +118,7 @@ int ZEXPORT kz_inflate(z_streamp strm, int flush)
         }
         
         if (kaezip_ctx->status == KAEZIP_DECOMP_END) {
+            (void)kaezip_check_strm_truely_end(strm);
             return Z_STREAM_END;
         }
     } while (strm->avail_out != 0 && strm->avail_in != 0);
