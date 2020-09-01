@@ -92,6 +92,7 @@ static int kaezip_check_strm_truely_end(z_streamp strm)
         && kaezip_ctx->status == KAEZIP_DECOMP_END_BUT_DATAREMAIN) {
         strm->avail_in = 1;
     }
+
     return KAEZIP_SUCCESS;
 }
 

@@ -274,43 +274,45 @@ static void kaezip_set_input_data(kaezip_ctx_t *kz_ctx)
 static void kaezip_set_comp_status(kaezip_ctx_t *kz_ctx)
 {
     if (kz_ctx->comp_type == WCRYPTO_INFLATE) {
-        switch(kz_ctx->op_data.status) {
-        case WCRYPTO_DECOMP_END:
-            kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_DECOMP_END : KAEZIP_DECOMP_END_BUT_DATAREMAIN);
-            break;
-        case WCRYPTO_STATUS_NULL:
-            kz_ctx->status = KAEZIP_DECOMP_DOING;
-            break;
-        case WD_VERIFY_ERR:
-            kz_ctx->status = KAEZIP_DECOMP_VERIFY_ERR;
-            break;
-        default: 
-            kz_ctx->status = KAEZIP_DECOMP_DOING;
-            break;
+        switch (kz_ctx->op_data.status) {
+            case WCRYPTO_DECOMP_END:
+                kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_DECOMP_END : KAEZIP_DECOMP_END_BUT_DATAREMAIN);
+                break;
+            case WCRYPTO_STATUS_NULL:
+                kz_ctx->status = KAEZIP_DECOMP_DOING;
+                break;
+            case WD_VERIFY_ERR:
+                kz_ctx->status = KAEZIP_DECOMP_VERIFY_ERR;
+                break;   
+            default:
+                kz_ctx->status = KAEZIP_DECOMP_DOING;
+                break;
         }
     } else {
-        switch(kz_ctx->op_data.status) {
-        case WCRYPTO_STATUS_NULL:
-            if (kz_ctx->in_len > kz_ctx->consumed) {
+        switch (kz_ctx->op_data.status) {
+            case WCRYPTO_STATUS_NULL:
+                if (kz_ctx->in_len > kz_ctx->consumed) {
+                    kz_ctx->status = KAEZIP_COMP_DOING;
+                    break;
+                }
+
+                if (kz_ctx->flush != WCRYPTO_FINISH) {
+                    kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
+                    break;
+                }
+
+                if (kz_ctx->remain != 0) {
+                    kz_ctx->status = KAEZIP_COMP_END_BUT_DATAREMAIN;
+                } else {
+                    kz_ctx->status = KAEZIP_COMP_END;
+                }
+                break;
+            case WD_VERIFY_ERR:
+                kz_ctx->status = KAEZIP_COMP_VERIFY_ERR;
+                break;   
+            default:
                 kz_ctx->status = KAEZIP_COMP_DOING;
                 break;
-            }
-            if (kz_ctx->flush != WCRYPTO_FINISH) {
-                kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
-                break;
-            }
-            if (kz_ctx->remain != 0) {
-                kz_ctx->status = KAEZIP_COMP_END_BUT_DATAREMAIN;
-            } else {
-                kz_ctx->status = KAEZIP_COMP_END;
-            }
-            break;
-        case WD_VERIFY_ERR:
-            kz_ctx->status = KAEZIP_COMP_VERIFY_ERR;
-            break;
-        default: 
-            kz_ctx->status = KAEZIP_COMP_DOING;
-            break;
         }
     }
 }
@@ -327,50 +329,51 @@ static void kaezip_get_output_data(kaezip_ctx_t *kz_ctx)
     }
 
     memcpy(kz_ctx->out, (uint8_t*)kz_ctx->op_data.out, kz_ctx->produced);
+
     kaezip_set_comp_status(kz_ctx);
 }
 
 static void kaezip_state_machine_trans(kaezip_ctx_t *kz_ctx)
 {
     if (kz_ctx->comp_type == WCRYPTO_INFLATE) {
-        switch(kz_ctx->status) {
-        case KAEZIP_DECOMP_INIT:
-            kz_ctx->status = KAEZIP_DECOMP_DOING;
-		case KAEZIP_DECOMP_DOING:
-		    break;
-        case KAEZIP_DECOMP_END_BUT_DATAREMAIN:
-            kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_DECOMP_END : KAEZIP_DECOMP_END_BUT_DATAREMAIN);
-        case KAEZIP_DECOMP_END:
-            break;
-        case KAEZIP_DECOMP_VERIFY_ERR:
-            US_ERR("kaezip inflate verify err");
-            break;
-        default: 
-            kz_ctx->status = KAEZIP_DECOMP_DOING;
-            break;
+        switch (kz_ctx->status) {
+            case KAEZIP_DECOMP_INIT:               // fall-through, trans to next state
+                kz_ctx->status = KAEZIP_DECOMP_DOING;
+            case KAEZIP_DECOMP_DOING:
+                break;
+            case KAEZIP_DECOMP_END_BUT_DATAREMAIN: // fall-through, trans to next state
+                kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_DECOMP_END : KAEZIP_DECOMP_END_BUT_DATAREMAIN);
+            case KAEZIP_DECOMP_END:
+                break;
+            case KAEZIP_DECOMP_VERIFY_ERR:
+                US_ERR("kaezip inflate verify err");
+                break;
+            default:
+                kz_ctx->status = KAEZIP_DECOMP_DOING;
+                break;
         }
     } else {
-        switch(kz_ctx->status) {
-        case KAEZIP_COMP_INIT:
-            kz_ctx->status = KAEZIP_COMP_DOING;
-        case KAEZIP_COMP_DOING:
-            kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
-        case KAEZIP_COMP_CRC_UNCHECK:
-            if (kz_ctx->remain == 0 && kz_ctx->in_len == 0 && kz_ctx->flush == WCRYPTO_FINISH) {
-                kaezip_deflate_addcrc(kz_ctx);
-                kz_ctx->status = (kz_ctx->end_block.remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
-            }
-            break;
-        case KAEZIP_COMP_END_BUT_DATAREMAIN:
-            kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
-        case KAEZIP_COMP_END:
-            break;
-        case KAEZIP_COMP_VERIFY_ERR:
-            US_ERR("kaezip deflate verify err");
-            break;
-        default: 
-            kz_ctx->status = KAEZIP_COMP_DOING;
-            break;
+        switch (kz_ctx->status) {
+            case KAEZIP_COMP_INIT:                  // fall-through, trans to next state
+                kz_ctx->status = KAEZIP_COMP_DOING;
+            case KAEZIP_COMP_DOING:                 // fall-through, trans to next state
+                kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
+            case KAEZIP_COMP_CRC_UNCHECK:
+                if (kz_ctx->remain == 0 && kz_ctx->flush == WCRYPTO_FINISH) {
+                    kaezip_deflate_addcrc(kz_ctx);
+                    kz_ctx->status = (kz_ctx->end_block.remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
+                }
+                break;
+            case KAEZIP_COMP_END_BUT_DATAREMAIN:    // fall-through, trans to next state
+                kz_ctx->status = (kz_ctx->remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
+            case KAEZIP_COMP_END:
+                break;
+            case KAEZIP_COMP_VERIFY_ERR:
+                US_ERR("kaezip deflate verify err");
+                break;
+            default:
+                kz_ctx->status = KAEZIP_COMP_DOING;
+                break;
         }
     }
 }
@@ -391,6 +394,7 @@ int kaezip_get_remain_data(kaezip_ctx_t *kz_ctx)
     }
 
     kaezip_state_machine_trans(kz_ctx);
+
     return KAEZIP_SUCCESS;
 }
 
