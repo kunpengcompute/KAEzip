@@ -91,7 +91,7 @@ export LD_LIBRARY_PATH=/usr/local/kaezip/lib
 
 For further assistance, contact Huawei Support at:
 
-<<https://www.huaweicloud.com/kunpeng/software/accelerator.html> >
+<<https://www.huaweicloud.com/kunpeng/software/kaezip.html> >
 
 ## Copyright
 
