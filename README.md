@@ -74,7 +74,7 @@ Then Install KAEzip library:
 
 ```
 cd KAEzip
-sh build.sh install
+sh setup.sh install
 ```
 
 ## Test Performace
