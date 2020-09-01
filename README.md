@@ -74,7 +74,7 @@ Then Install KAEzip library:
 
 ```
 cd KAEzip
-sh setup.sh install
+sh build.sh install
 ```
 
 ## Test Performace
@@ -91,7 +91,7 @@ export LD_LIBRARY_PATH=/usr/local/kaezip/lib
 
 For further assistance, contact Huawei Support at:
 
-<<https://www.huaweicloud.com/kunpeng/software/kaezip.html> >
+<<https://www.huaweicloud.com/kunpeng/software/accelerator.html> >
 
 ## Copyright
 

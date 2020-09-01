@@ -194,4 +194,27 @@ void kaezip_set_fmt_tail(kaezip_ctx_t *kaezip_ctx)
     kaezip_ctx->end_block.b_set = (kaezip_ctx->end_block.remain == 0 ? 0 : 1);
 }
 
+void kaezip_deflate_addcrc(kaezip_ctx_t *kz_ctx)
+{
+    if (kz_ctx->status != KAEZIP_COMP_CRC_UNCHECK) {
+        US_DEBUG("kaezip status wrong, not crc uncheck");
+        return;
+    }
+
+    kaezip_append_fmt_tail(kz_ctx);
+
+    int data_begin = kz_ctx->end_block.data_len - kz_ctx->end_block.remain;
+    int end_produced = 0;
+    if (kz_ctx->end_block.remain <= kz_ctx->avail_out - kz_ctx->produced) {
+        end_produced = kz_ctx->end_block.remain;
+        kz_ctx->end_block.remain = 0;
+    } else {
+        end_produced = kz_ctx->avail_out - kz_ctx->produced;
+        kz_ctx->end_block.remain -= end_produced;
+    }
+
+    memcpy(kz_ctx->out + kz_ctx->produced, kz_ctx->end_block.buffer + data_begin, end_produced);
+    kz_ctx->produced += end_produced;
+    kz_ctx->status = (kz_ctx->end_block.remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
+}
 

@@ -136,7 +136,10 @@ int kz_deflate(z_streamp strm, int flush)
         }
     } while (strm->avail_out != 0 && strm->avail_in != 0) ;
 
-    if (flush == Z_FINISH && strm->avail_in == 0 && kaezip_ctx->remain == 0) {
+    if (kaezip_ctx->status == KAEZIP_COMP_END 
+            && flush == Z_FINISH 
+            && strm->avail_in == 0 
+            && kaezip_ctx->remain == 0) {
         return Z_STREAM_END;
     } else {
         return Z_OK;
@@ -193,7 +196,10 @@ static int kaezip_do_deflate(z_streamp strm, int flush)
     }
 
     //if last stream(Z_FINISH) input len is zero, add a format tail for output, unlikely go here
-    if (flush == Z_FINISH && strm->avail_in == 0 && kaezip_ctx->remain == 0)  {
+    if (kaezip_ctx->status != KAEZIP_COMP_END
+            && flush == Z_FINISH 
+            && strm->avail_in == 0 
+            && kaezip_ctx->remain == 0)  {
         kaezip_set_fmt_tail(kaezip_ctx);
         return KAEZIP_SUCCESS;
     }
@@ -203,6 +209,10 @@ static int kaezip_do_deflate(z_streamp strm, int flush)
         US_ERR("kae zip do deflate impl fail!");
         return KAEZIP_FAILED;
     }
+
+    US_DEBUG("kaezip do deflate avail_in %u, avail_out %u, consumed %u, produced %u, remain %u, status %d, flush %d", 
+        strm->avail_in, strm->avail_out, kaezip_ctx->consumed, kaezip_ctx->produced, 
+        kaezip_ctx->remain, kaezip_ctx->status, flush);
 
     return KAEZIP_SUCCESS;
 }
