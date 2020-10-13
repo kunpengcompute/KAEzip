@@ -176,6 +176,17 @@ static void kaezip_deflate_set_fmt_header(z_streamp strm, int comp_alg_type)
     kaezip_ctx->header_pos = fmt_header_sz;
 }
 
+int ZEXPORT kz_deflateReset(z_streamp strm)
+{
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    if (kaezip_ctx != NULL) {
+        US_DEBUG("kaezip deflate reset");
+        kaezip_init_ctx(kaezip_ctx);
+    }
+
+    return lz_deflateReset(strm);
+}
+
 static int kaezip_do_deflate(z_streamp strm, int flush)
 {
     kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
