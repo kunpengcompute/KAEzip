@@ -48,31 +48,22 @@ static int kaezip_do_inflate(z_streamp strm, int flush);
 
 int ZEXPORT kz_inflateInit2_(z_streamp strm, int windowBits, const char *version, int stream_size)
 {
+    static const int GZIP_INFLATE_MAX_AUTO_WBITS    = 47;
+    static const int GZIP_INFLATE_MIN_AUTO_WBITS    = 32;
+    
     int ret = lz_inflateInit2_(strm, windowBits, version, stream_size);
     if (unlikely(ret != Z_OK)) {
         US_ERR("lz_inflateInit2_ error, windowBits %d!", windowBits);
         return Z_ERRNO;
     }
 
-    int alg_comp_type = kaezip_winbits2algtype(windowBits);
-    if (alg_comp_type != WCRYPTO_ZLIB && alg_comp_type != WCRYPTO_GZIP) {
-        US_WARN("unsupport windowBits %d!", windowBits);
-        strm->reserved = (uLong)0;
+    setInflateKaezipCtx(strm, (unsigned long)0);    
+    if (windowBits >= GZIP_INFLATE_MIN_AUTO_WBITS && windowBits <= GZIP_INFLATE_MAX_AUTO_WBITS) {
         return Z_OK;
+    } else {
+        int alg_comp_type = kaezip_winbits2algtype(windowBits);
+        return kz_do_inflateInit(strm, alg_comp_type);
     }
-
-    kaezip_ctx_t* kaezip_ctx = kaezip_get_ctx(alg_comp_type, WCRYPTO_INFLATE);
-    if (kaezip_ctx == NULL) {
-        US_ERR("failed to get kaezip ctx, windowBits %d!", windowBits);
-        strm->reserved = (uLong)0;
-        return Z_OK;
-    }
-    
-    kaezip_ctx->status = KAEZIP_DECOMP_INIT;
-    strm->reserved = (uLong)kaezip_ctx;
-
-    US_DEBUG("kae zip inflate init success, kaezip_ctx %p, kaezip_ctx->comp_alg_type %s!",
-        kaezip_ctx, kaezip_ctx->comp_alg_type == WCRYPTO_ZLIB ? "zlib" : "gzip");
 
     return Z_OK;
 }
@@ -80,7 +71,7 @@ int ZEXPORT kz_inflateInit2_(z_streamp strm, int windowBits, const char *version
 static int kaezip_check_strm_truely_end(z_streamp strm)
 {
     KAEZIP_RETURN_FAIL_IF(strm == NULL, "strm is NULL.", Z_ERRNO);
-    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)getInflateKaezipCtx(strm);
     KAEZIP_RETURN_FAIL_IF(kaezip_ctx == NULL, "kaezip ctx is NULL.", Z_ERRNO);
 
     if (strm->avail_in == 1 
@@ -101,7 +92,7 @@ int ZEXPORT kz_inflate(z_streamp strm, int flush)
     int ret = -1;
     KAEZIP_RETURN_FAIL_IF(strm == NULL, "strm is NULL.", Z_ERRNO);
 
-    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)getInflateKaezipCtx(strm);
     KAEZIP_RETURN_FAIL_IF(kaezip_ctx == NULL, "kaezip ctx is NULL.", Z_ERRNO);
 
     do {
@@ -136,19 +127,19 @@ int ZEXPORT kz_inflate(z_streamp strm, int flush)
 
 int kz_inflateEnd(z_streamp strm)
 {
-    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)getInflateKaezipCtx(strm);
     if (kaezip_ctx != NULL) {
         US_DEBUG("kaezip inflate end");
         kaezip_put_ctx(kaezip_ctx);
     }
 
-    strm->reserved = 0;
+    setInflateKaezipCtx(strm, 0);
     return lz_inflateEnd(strm);
 }
 
 int ZEXPORT kz_inflateReset(z_streamp strm)
 {
-    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)getInflateKaezipCtx(strm);
     if (kaezip_ctx != NULL) {
         US_DEBUG("kaezip inflate reset");
         kaezip_init_ctx(kaezip_ctx);
@@ -159,7 +150,7 @@ int ZEXPORT kz_inflateReset(z_streamp strm)
 
 static int kaezip_do_inflate(z_streamp strm, int flush)
 {
-    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)strm->reserved;
+    kaezip_ctx_t *kaezip_ctx = (kaezip_ctx_t *)getInflateKaezipCtx(strm);
     KAEZIP_RETURN_FAIL_IF(kaezip_ctx == NULL, "kaezip ctx is NULL.", KAEZIP_FAILED);
     KAEZIP_RETURN_FAIL_IF(kaezip_ctx->comp_alg_type != WCRYPTO_ZLIB && kaezip_ctx->comp_alg_type != WCRYPTO_GZIP, 
         "not support alg comp type!", KAEZIP_FAILED);
@@ -206,5 +197,54 @@ static int kaezip_do_inflate(z_streamp strm, int flush)
         kaezip_ctx->remain, kaezip_ctx->status, flush);
         
     return KAEZIP_SUCCESS;
+}
+
+int kz_do_inflateInit(z_streamp strm, int alg_comp_type)
+{
+    unsigned long kaezip_ctx_value = getInflateKaezipCtx(strm);
+    if (kaezip_ctx_value != 0) {
+        return Z_OK;
+    }
+
+    if (alg_comp_type != WCRYPTO_ZLIB && alg_comp_type != WCRYPTO_GZIP) {
+        US_WARN("unsupport alg_comp_type %d!", alg_comp_type);
+        setInflateKaezipCtx(strm, 0);
+        return Z_OK;
+    }
+
+    kaezip_ctx_t* kaezip_ctx = kaezip_get_ctx(alg_comp_type, WCRYPTO_INFLATE);
+    if (kaezip_ctx == NULL) {
+        US_ERR("failed to get kaezip ctx, alg_comp_type %d!", alg_comp_type);
+        setInflateKaezipCtx(strm, 0);
+        return Z_OK;
+    }
+    
+    kaezip_ctx->status = KAEZIP_DECOMP_INIT;
+    setInflateKaezipCtx(strm, (uLong)kaezip_ctx);
+
+    US_DEBUG("kae zip inflate init success, kaezip_ctx %p, kaezip_ctx->comp_alg_type %s!",
+        kaezip_ctx, kaezip_ctx->comp_alg_type == WCRYPTO_ZLIB ? "zlib" : "gzip"); 
+
+    return Z_OK;
+}
+
+int kz_getAutoInflateAlgType(z_streamp strm)
+{
+    if (strm->next_in == NULL || strm->avail_in == 0) {
+        return WCRYPTO_NONE;
+    }
+        
+    int wrap = getInflateStateWrap(strm);
+    // wrap bit 0 true for zlib, bit 1 true for gzip, bit 2 true to validate check value
+    if ((wrap & 0x7) == 0x7) {
+        // gzip head
+        if (strm->next_in[0] == 0x1F && strm->next_in[1] == 0x8B) {
+            return WCRYPTO_GZIP;
+        } else {
+            return WCRYPTO_ZLIB;
+        }
+    } else {
+        return WCRYPTO_NONE;
+    }
 }
 

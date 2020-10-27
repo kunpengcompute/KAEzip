@@ -27,6 +27,9 @@
 #define KAEZIP_STREAM_CHUNK_IN         ((COMP_BLOCK_SIZE) >> 3)  // change the input size would change the performace
 #define KAEZIP_STREAM_CHUNK_OUT        (COMP_BLOCK_SIZE)
 
+#define WCRYPTO_NONE            (-1)
+#define WCRYPTO_RAW_DEFLATE     2
+
 int kz_get_devices(void);
 int kaezip_winbits2algtype(int windowBits);
 
