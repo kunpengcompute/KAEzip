@@ -27,11 +27,15 @@ extern int kz_inflateInit2_(z_streamp strm, int windowBits, const char *version,
 extern int kz_inflate(z_streamp strm, int flush);
 extern int kz_inflateEnd(z_streamp strm);
 extern int kz_inflateReset(z_streamp strm);
+extern int kz_do_inflateInit(z_streamp strm, int alg_comp_type);
 
 extern int lz_inflateEnd(z_streamp strm);
 extern int lz_inflateInit2_(z_streamp strm, int windowBits, const char *version, int stream_size);
 extern int lz_inflateReset(z_streamp strm);
 
+extern int getInflateStateWrap(z_streamp strm);
+extern unsigned long getInflateKaezipCtx(z_streamp strm);
+extern void setInflateKaezipCtx(z_streamp strm, unsigned long kaezip_ctx);
 #endif
 
 

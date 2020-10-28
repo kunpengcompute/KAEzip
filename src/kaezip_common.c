@@ -27,9 +27,6 @@
 #include "wd.h"
 #include "wd_comp.h"
 
-#define WCRYPTO_NONE            (-1)
-#define WCRYPTO_RAW_DEFLATE     (2)
-
 #define __swab32(x)                \
       ((((x)&0x000000ff) << 24) |  \
         (((x)&0x0000ff00) << 8) |  \

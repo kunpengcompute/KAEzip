@@ -1,6 +1,6 @@
 Name:          libkaezip
 Summary:       Huawei Kunpeng Accelerator Engine Zip
-Version:       1.3.8
+Version:       1.3.9
 Release:       1%dist
 License:       Apache-2.0
 Source:        %{name}-%{version}.tar.gz

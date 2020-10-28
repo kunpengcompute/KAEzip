@@ -27,11 +27,15 @@ extern int kz_deflateInit2_(z_streamp strm, int level, int metho, int windowBit,
                       const char *version, int stream_size);
 extern int kz_deflate(z_streamp strm, int flush);
 extern int kz_deflateEnd(z_streamp strm);
+extern int kz_deflateReset(z_streamp strm);
 
 extern int lz_deflateEnd(z_streamp strm);
 extern int lz_deflateInit2_(z_streamp strm, int level, int metho, int windowBit, int memLevel, int strategy,
                       const char *version, int stream_size);
+extern int lz_deflateReset(z_streamp strm);
 
+extern unsigned long getDeflateKaezipCtx(z_streamp strm);
+extern void setDeflateKaezipCtx(z_streamp strm, unsigned long kaezip_ctx);
 #endif
 
 
