@@ -5,10 +5,13 @@
 - [Requirements](#requirements)
 - [Installation Instructions](#installation-instructions)
 - [Test Performace](#test-performace)
+- [Contribution guidelines](#contribution-guidelines)
 - [More Information](#more-information)
-- [Copyright](#Copyright)
+- [Copyright](#copyright)
 
 ## Introduction
+
+Kunpeng Zlib Acceleration Engine is to build performance competitiveness of common software libraries on the Kunpeng platform.
 
 Kunpeng Zlib Acceleration Engine，which is a new technology within Hisilicon Kunpeng 920 processors，provides a hardware-enabled foundation for  compression. It significantly increases the performance across cloud, big data, and storage applications and  platforms.  By using  Kunpeng Zlib Acceleration Engine, you can:
 
@@ -77,6 +80,9 @@ cd KAEzip
 sh setup.sh install
 ```
 
+for more install guid and user guid, get information at:
+<https://www.huaweicloud.com/kunpeng/software/kaezip.html>
+
 ## Test Performace
 
 ```
@@ -86,12 +92,15 @@ export LD_LIBRARY_PATH=/usr/local/kaezip/lib
 ./kaezip_perf -m 8 -l 1024 -n 1000
 ./kaezip_perf -m 8 -l 1024 -n 1000 -d
 ```
+## Contribution guidelines
+
+If you want to contribute to KAEzip, please use GitHub [issues](https://github.com/kunpengcompute/KAEzip/issues/new) for tracking requests and bugs.
 
 ## More Information
 
-For further assistance, contact Huawei Support at:
+For further assistance and QA, contact Huawei Support at:
 
-<<https://www.huaweicloud.com/kunpeng/software/kaezip.html> >
+<https://www.huaweicloud.com/kunpeng/software/kaezip.html> 
 
 ## Copyright
 
