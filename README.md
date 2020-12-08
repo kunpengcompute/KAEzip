@@ -75,6 +75,8 @@ make install
 
 Then Install KAEzip library:
 
+Download [zlib-1.2.11.tar.gz](https://www.zlib.net/zlib-1.2.11.tar.gz) at KAEzip/open_source.
+
 ```
 cd KAEzip
 sh setup.sh install
