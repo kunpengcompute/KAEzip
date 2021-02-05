@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int kae_drv_get_item(const char *config_file, const char *v_pszSection, 
+int kaezip_drv_get_item(const char *config_file, const char *v_pszSection, 
                      const char *v_pszItem, char *v_pszValue);
 
 #endif  // HISI_ACC_OPENSSL_CONFIG_H

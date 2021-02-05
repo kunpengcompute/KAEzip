@@ -33,15 +33,15 @@
 #define MAX_LEVEL_LEN         10
 #define MAX_CONFIG_LEN        512
 
-static const char *g_kae_conf_env = "KAEZIP_CONF_ENV";
+static const char *g_kaezip_conf_env = "KAEZIP_CONF_ENV";
 
-FILE *g_kae_debug_log_file = (FILE *)NULL;
-pthread_mutex_t g_debug_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-int g_debug_file_ref_count = 0;
-int g_log_init_times = 0;
-int g_kae_log_level = 0;
+FILE *g_kaezip_debug_log_file = (FILE *)NULL;
+pthread_mutex_t g_kaezip_debug_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+int g_kaezip_debug_file_ref_count = 0;
+int g_kaezip_log_init_times = 0;
+int g_kaezip_log_level = 0;
 
-const char *g_log_level[] = {
+const char *g_kaezip_log_level_string[] = {
     "none",
     "error",
     "warning",
@@ -56,7 +56,7 @@ static char *kae_getenv(const char *name)
 
 static void kae_set_conf_debuglevel()
 {
-    char *conf_path = kae_getenv(g_kae_conf_env);
+    char *conf_path = kae_getenv(g_kaezip_conf_env);
     unsigned int i = 0;
     const char *filename = KAE_CONFIG_FILE_NAME;
     char *file_path = (char *)NULL;
@@ -73,14 +73,14 @@ static void kae_set_conf_debuglevel()
     memset(file_path, 0, sizeof(conf_path) + sizeof(filename) + 1);
     strcat(file_path, conf_path);
     strcat(file_path, filename);
-    int ret = kae_drv_get_item(file_path, "LogSection", "debug_level", debuglev);
+    int ret = kaezip_drv_get_item(file_path, "LogSection", "debug_level", debuglev);
     if (ret != 0) {
         goto err;
     }
 
-    for (i = 0; i < sizeof(g_log_level) / sizeof(g_log_level[0]); i++) {
-        if (strncmp(g_log_level[i], debuglev, strlen(debuglev) - 1) == 0) {
-            g_kae_log_level = i;
+    for (i = 0; i < sizeof(g_kaezip_log_level_string) / sizeof(g_kaezip_log_level_string[0]); i++) {
+        if (strncmp(g_kaezip_log_level_string[i], debuglev, strlen(debuglev) - 1) == 0) {
+            g_kaezip_log_level = i;
             free(file_path);
             free(debuglev);
             return;
@@ -88,7 +88,7 @@ static void kae_set_conf_debuglevel()
     }
 
 err:
-    g_kae_log_level = KAE_NONE;
+    g_kaezip_log_level = KAE_NONE;
     if (debuglev != NULL) {
         free(debuglev);
         debuglev = (char *)NULL;
@@ -101,86 +101,38 @@ err:
     return;
 }
 
-void kae_debug_init_log()
+void kaezip_debug_init_log()
 {
-    pthread_mutex_lock(&g_debug_file_mutex);
+    pthread_mutex_lock(&g_kaezip_debug_file_mutex);
     kae_set_conf_debuglevel();
-    if (!g_debug_file_ref_count && g_kae_log_level != KAE_NONE) {
-        g_kae_debug_log_file = fopen(KAE_DEBUG_FILE_PATH, "a+");
-        if (g_kae_debug_log_file == NULL) {
-            g_kae_debug_log_file = stderr;
-            fprintf(stderr, "unable to open %s, %s\n", KAE_DEBUG_FILE_PATH, strerror(errno));
+    if (!g_kaezip_debug_file_ref_count && g_kaezip_log_level != KAE_NONE) {
+        g_kaezip_debug_log_file = fopen(KAEZIP_DEBUG_FILE_PATH, "a+");
+        if (g_kaezip_debug_log_file == NULL) {
+            g_kaezip_debug_log_file = stderr;
+            fprintf(stderr, "unable to open %s, %s\n", KAEZIP_DEBUG_FILE_PATH, strerror(errno));
         } else {
-            g_debug_file_ref_count++;
+            g_kaezip_debug_file_ref_count++;
         }
     }
-    g_log_init_times++;
-    pthread_mutex_unlock(&g_debug_file_mutex);
+    g_kaezip_log_init_times++;
+    pthread_mutex_unlock(&g_kaezip_debug_file_mutex);
 }
 
-void kae_debug_close_log()
+void kaezip_debug_close_log()
 {
-    pthread_mutex_lock(&g_debug_file_mutex);
-    g_log_init_times--;
-    if (g_debug_file_ref_count && (g_log_init_times == 0)) {
-        if (g_kae_debug_log_file != NULL) {
-            fclose(g_kae_debug_log_file);
-            g_debug_file_ref_count--;
-            g_kae_debug_log_file = stderr;
+    pthread_mutex_lock(&g_kaezip_debug_file_mutex);
+    g_kaezip_log_init_times--;
+    if (g_kaezip_debug_file_ref_count && (g_kaezip_log_init_times == 0)) {
+        if (g_kaezip_debug_log_file != NULL) {
+            fclose(g_kaezip_debug_log_file);
+            g_kaezip_debug_file_ref_count--;
+            g_kaezip_debug_log_file = stderr;
         }
     }
-    pthread_mutex_unlock(&g_debug_file_mutex);
+    pthread_mutex_unlock(&g_kaezip_debug_file_mutex);
 }
 
-void ENGINE_LOG_LIMIT(int level, int times, int limit, const char *fmt, ...)
-{
-    struct tm *log_tm_p = (struct tm *)NULL;
-    static unsigned long ulpre = 0;
-    static int is_should_print = 5;
-
-    if (level > g_kae_log_level) {
-        return;
-    }
-
-    va_list args1 = { 0 };
-    va_start(args1, fmt);
-    time_t curr = time((time_t *)NULL);
-    if (difftime(curr, ulpre) > limit) {
-        is_should_print = times;
-    }
-    if (is_should_print <= 0) {
-        is_should_print = 0;
-    }
-    if (is_should_print-- > 0) {
-        log_tm_p = (struct tm *)localtime(&curr);
-        flock(g_kae_debug_log_file->_fileno, LOCK_EX);
-        pthread_mutex_lock(&g_debug_file_mutex);
-        fseek(g_kae_debug_log_file, 0, SEEK_END);
-        if (log_tm_p != NULL) {
-            fprintf(g_kae_debug_log_file, "[%4d-%02d-%02d %02d:%02d:%02d][%s][%s:%d:%s()] ",
-                    (1900 + log_tm_p->tm_year), (1 + log_tm_p->tm_mon), log_tm_p->tm_mday,   // base time 1900 year
-                    log_tm_p->tm_hour, log_tm_p->tm_min, log_tm_p->tm_sec,
-                    g_log_level[level], __FILE__, __LINE__, __func__);
-        } else {
-            fprintf(g_kae_debug_log_file, "[%s][%s:%d:%s()] ",
-                    g_log_level[level], __FILE__, __LINE__, __func__);
-        }
-        vfprintf(g_kae_debug_log_file, fmt, args1);
-        fprintf(g_kae_debug_log_file, "\n");
-        if (ftell(g_kae_debug_log_file) > KAE_LOG_MAX_SIZE) {
-            kae_save_log(g_kae_debug_log_file);
-            ftruncate(g_kae_debug_log_file->_fileno, 0);
-            fseek(g_kae_debug_log_file, 0, SEEK_SET);
-        }
-        pthread_mutex_unlock(&g_debug_file_mutex);
-        flock(g_kae_debug_log_file->_fileno, LOCK_UN);
-        ulpre = time((time_t *)NULL);
-    }
-
-    va_end(args1);
-}
-
-void kae_save_log(FILE *src)
+void kaezip_save_log(FILE *src)
 {
     int size = 0;
     char buf[1024] = {0}; // buf length:1024
@@ -189,7 +141,7 @@ void kae_save_log(FILE *src)
         return;
     }
 
-    FILE *dst = fopen(KAE_DEBUG_FILE_PATH_OLD, "w");
+    FILE *dst = fopen(KAEZIP_DEBUG_FILE_PATH_OLD, "w");
     if (dst == NULL) {
         return;
     }

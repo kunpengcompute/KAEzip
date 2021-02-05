@@ -33,7 +33,7 @@ extern int kz_deflateInit2_(z_streamp strm, int level, int metho, int windowBit,
 extern int kz_inflateInit2_(z_streamp strm, int windowBits, const char *version, int stream_size);
 extern int kz_deflateEnd(z_streamp strm);
 extern int kz_inflateReset(z_streamp strm);
-extern int Kz_deflateReset(z_streamp strm);
+extern int kz_deflateReset(z_streamp strm);
 extern int kz_getAutoInflateAlgType(z_streamp strm);
 extern int kz_do_inflateInit(z_streamp strm, int alg_comp_type);
 
