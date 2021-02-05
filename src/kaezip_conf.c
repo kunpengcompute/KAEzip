@@ -22,7 +22,7 @@
 
 #include "kaezip_conf.h"
 
-int kae_drv_findsection(FILE *stream, const char *v_pszSection)
+int kaezip_drv_findsection(FILE *stream, const char *v_pszSection)
 {
     char line[256]; // array length:256
     char *pos = NULL;
@@ -49,7 +49,7 @@ int kae_drv_findsection(FILE *stream, const char *v_pszSection)
     return -1;
 }
 
-void kae_drv_get_value(char *pos, char *v_pszValue)
+void kaezip_drv_get_value(char *pos, char *v_pszValue)
 {
     while (*pos != '\0') {
         if (*pos == ' ') {
@@ -66,7 +66,7 @@ void kae_drv_get_value(char *pos, char *v_pszValue)
     }
 }
 
-int kae_drv_find_item(FILE *stream, const char *v_pszItem, char *v_pszValue)
+int kaezip_drv_find_item(FILE *stream, const char *v_pszItem, char *v_pszValue)
 {
     char line[256]; // array length:256
     char *pos = NULL;
@@ -80,7 +80,7 @@ int kae_drv_find_item(FILE *stream, const char *v_pszItem, char *v_pszValue)
             pos = strstr(line, "=");
             if (pos != NULL) {
                 pos++;
-                kae_drv_get_value(pos, v_pszValue);
+                kaezip_drv_get_value(pos, v_pszValue);
                 return 0;
             }
         }
@@ -93,7 +93,7 @@ int kae_drv_find_item(FILE *stream, const char *v_pszItem, char *v_pszValue)
     return -1;
 }
 
-int kae_drv_get_item(const char *config_file, const char *v_pszSection, 
+int kaezip_drv_get_item(const char *config_file, const char *v_pszSection, 
                      const char *v_pszItem, char *v_pszValue)
 {
     FILE *stream;
@@ -104,8 +104,8 @@ int kae_drv_get_item(const char *config_file, const char *v_pszSection,
         return -1;
     }
 
-    if (kae_drv_findsection(stream, v_pszSection) == 0) {
-        retvalue = kae_drv_find_item(stream, v_pszItem, v_pszValue);
+    if (kaezip_drv_findsection(stream, v_pszSection) == 0) {
+        retvalue = kaezip_drv_find_item(stream, v_pszItem, v_pszValue);
     }
 
     fclose(stream);

@@ -61,17 +61,17 @@ typedef struct KAE_QUEUE_POOL_HEAD {
     KAE_QUEUE_POOL_NODE_S *kae_queue_pool; /* point to a attray */
 } KAE_QUEUE_POOL_HEAD_S;
 
-void kae_wd_free_blk(void *pool, void *blk);
-void *kae_wd_alloc_blk(void *pool, size_t size);
-void *kae_dma_map(void *usr, void *va, size_t sz);
-void kae_dma_unmap(void *usr, void *va, void *dma, size_t sz);
+void kaezip_wd_free_blk(void *pool, void *blk);
+void *kaezip_wd_alloc_blk(void *pool, size_t size);
+void *kaezip_dma_map(void *usr, void *va, size_t sz);
+void kaezip_dma_unmap(void *usr, void *va, void *dma, size_t sz);
 
-KAE_QUEUE_POOL_HEAD_S* kae_init_queue_pool (int algtype);
-KAE_QUEUE_DATA_NODE_S* kae_get_node_from_pool(KAE_QUEUE_POOL_HEAD_S* pool_head, int alg_comp_type, int comp_optype);
-int kae_put_node_to_pool (KAE_QUEUE_POOL_HEAD_S* pool_head, KAE_QUEUE_DATA_NODE_S* node_data);
-void kae_queue_pool_reset(KAE_QUEUE_POOL_HEAD_S* pool_head);
-void kae_queue_pool_destroy(KAE_QUEUE_POOL_HEAD_S* pool_head, kae_release_priv_ctx_cb release_fn);
-void kae_queue_pool_check_and_release(KAE_QUEUE_POOL_HEAD_S* pool_head, kae_release_priv_ctx_cb release_ectx_fn);
+KAE_QUEUE_POOL_HEAD_S* kaezip_init_queue_pool (int algtype);
+KAE_QUEUE_DATA_NODE_S* kaezip_get_node_from_pool(KAE_QUEUE_POOL_HEAD_S* pool_head, int alg_comp_type, int comp_optype);
+int kaezip_put_node_to_pool (KAE_QUEUE_POOL_HEAD_S* pool_head, KAE_QUEUE_DATA_NODE_S* node_data);
+void kaezip_queue_pool_reset(KAE_QUEUE_POOL_HEAD_S* pool_head);
+void kaezip_queue_pool_destroy(KAE_QUEUE_POOL_HEAD_S* pool_head, kae_release_priv_ctx_cb release_fn);
+void kaezip_queue_pool_check_and_release(KAE_QUEUE_POOL_HEAD_S* pool_head, kae_release_priv_ctx_cb release_ectx_fn);
 
 #endif
 

@@ -27,6 +27,8 @@
 
 static KAE_QUEUE_POOL_HEAD_S* g_kaezip_deflate_qp = NULL;
 static KAE_QUEUE_POOL_HEAD_S* g_kaezip_inflate_qp = NULL;
+static pthread_mutex_t g_kaezip_deflate_pool_init_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t g_kaezip_inflate_pool_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static KAE_QUEUE_POOL_HEAD_S* kaezip_get_qp(int algtype);
 static kaezip_ctx_t* kaezip_new_ctx(KAE_QUEUE_DATA_NODE_S* q_node, int alg_comp_type, int comp_optype);
@@ -72,10 +74,10 @@ static kaezip_ctx_t* kaezip_new_ctx(KAE_QUEUE_DATA_NODE_S* q_node, int alg_comp_
     }
     memset(kz_ctx, 0, sizeof(kaezip_ctx_t));
 
-    kz_ctx->setup.br.alloc = kae_wd_alloc_blk;
-    kz_ctx->setup.br.free = kae_wd_free_blk;
-    kz_ctx->setup.br.iova_map = kae_dma_map;
-    kz_ctx->setup.br.iova_unmap = kae_dma_unmap;
+    kz_ctx->setup.br.alloc = kaezip_wd_alloc_blk;
+    kz_ctx->setup.br.free = kaezip_wd_free_blk;
+    kz_ctx->setup.br.iova_map = kaezip_dma_map;
+    kz_ctx->setup.br.iova_unmap = kaezip_dma_unmap;
     kz_ctx->setup.br.usr = q_node->kae_queue_mem_pool;
 
     kz_ctx->op_data.in = kz_ctx->setup.br.alloc(kz_ctx->setup.br.usr, COMP_BLOCK_SIZE); 
@@ -138,15 +140,15 @@ kaezip_ctx_t* kaezip_get_ctx(int alg_comp_type, int comp_optype)
 
     KAE_QUEUE_POOL_HEAD_S* qp = kaezip_get_qp(comp_optype);
     if(unlikely(!qp)) {
-        US_ERR_LIMIT("failed to get hardware queue pool");
+        US_ERR("failed to get hardware queue pool");
         return NULL;
     }
 
-    kae_queue_pool_check_and_release(qp, kaezip_free_ctx);
+    kaezip_queue_pool_check_and_release(qp, kaezip_free_ctx);
 
-    q_node = kae_get_node_from_pool(qp, alg_comp_type, comp_optype);
+    q_node = kaezip_get_node_from_pool(qp, alg_comp_type, comp_optype);
     if (q_node == NULL) {
-        US_ERR_LIMIT("failed to get hardware queue");
+        US_ERR("failed to get hardware queue");
         return NULL;
     }
 
@@ -155,7 +157,7 @@ kaezip_ctx_t* kaezip_get_ctx(int alg_comp_type, int comp_optype)
         kz_ctx = kaezip_new_ctx(q_node, alg_comp_type, comp_optype);
         if (kz_ctx == NULL) {
             US_ERR("kaezip new engine ctx fail!");
-            (void)kae_put_node_to_pool(qp, q_node);
+            (void)kaezip_put_node_to_pool(qp, q_node);
             return NULL;
         }
     }
@@ -190,14 +192,16 @@ void  kaezip_init_ctx(kaezip_ctx_t* kz_ctx)
 
 void kaezip_put_ctx(kaezip_ctx_t* kz_ctx)
 {
+    KAE_QUEUE_DATA_NODE_S* temp = NULL;
     if (unlikely(kz_ctx == NULL)) {
         US_ERR("kae zip ctx NULL!");
         return;
     }
 
     if (kz_ctx->q_node != NULL) {
-        (void)kae_put_node_to_pool(kaezip_get_qp(kz_ctx->comp_type), kz_ctx->q_node);
+        temp = kz_ctx->q_node;
         kz_ctx->q_node = NULL;
+        (void)kaezip_put_node_to_pool(kaezip_get_qp(kz_ctx->comp_type), temp);
     }
 
     kz_ctx = NULL;
@@ -409,16 +413,20 @@ static KAE_QUEUE_POOL_HEAD_S* kaezip_get_qp(int algtype)
         if (g_kaezip_deflate_qp) {
             return g_kaezip_deflate_qp;
         }
-        kae_queue_pool_destroy(g_kaezip_deflate_qp, kaezip_free_ctx);
-        g_kaezip_deflate_qp = kae_init_queue_pool(algtype);
+        pthread_mutex_lock(&g_kaezip_deflate_pool_init_mutex);
+        kaezip_queue_pool_destroy(g_kaezip_deflate_qp, kaezip_free_ctx);
+        g_kaezip_deflate_qp = kaezip_init_queue_pool(algtype);
+        pthread_mutex_unlock(&g_kaezip_deflate_pool_init_mutex);
 
         return g_kaezip_deflate_qp == NULL ? NULL : g_kaezip_deflate_qp;
     } else {
         if (g_kaezip_inflate_qp) {
             return g_kaezip_inflate_qp;
         }
-        kae_queue_pool_destroy(g_kaezip_inflate_qp, kaezip_free_ctx);
-        g_kaezip_inflate_qp = kae_init_queue_pool(algtype);
+        pthread_mutex_lock(&g_kaezip_inflate_pool_init_mutex);
+        kaezip_queue_pool_destroy(g_kaezip_inflate_qp, kaezip_free_ctx);
+        g_kaezip_inflate_qp = kaezip_init_queue_pool(algtype);
+        pthread_mutex_unlock(&g_kaezip_inflate_pool_init_mutex);
         
         return g_kaezip_inflate_qp == NULL ? NULL : g_kaezip_inflate_qp;
     }
