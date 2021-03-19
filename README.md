@@ -6,6 +6,9 @@
 - [Installation Instructions](#installation-instructions)
 - [Test Performace](#test-performace)
 - [Contribution Guidelines](#contribution-Guidelines)
+- [Vulnerability Management](#Vulnerability-Management)
+- [Quality Requirements](#Quality-Requirements)
+- [Secure Design](#Secure-Design)
 - [More Information](#more-information)
 - [Copyright](#copyright)
 
