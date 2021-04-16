@@ -19,3 +19,8 @@ scripts:
   - cd ../../KAEzip
   - sudo bash setup.sh install
   
+  - cd test
+  - make
+  - export LD_LIBRARY_PATH=/usr/local/kaezip/lib
+  - ./kaezip_perf -m 8 -l 1024 -n 1000
+  - ./kaezip_perf -m 8 -l 1024 -n 1000 -d
