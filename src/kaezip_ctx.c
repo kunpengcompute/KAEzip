@@ -363,7 +363,7 @@ static void kaezip_state_machine_trans(kaezip_ctx_t *kz_ctx)
             case KAEZIP_COMP_DOING:                 // fall-through, trans to next state
                 kz_ctx->status = KAEZIP_COMP_CRC_UNCHECK;
             case KAEZIP_COMP_CRC_UNCHECK:
-                if (kz_ctx->remain == 0 && kz_ctx->flush == WCRYPTO_FINISH) {
+                if (kz_ctx->remain == 0 && kz_ctx->flush == WCRYPTO_FINISH && kz_ctx->in_len == 0) {
                     kaezip_deflate_addcrc(kz_ctx);
                     kz_ctx->status = (kz_ctx->end_block.remain == 0 ? KAEZIP_COMP_END : KAEZIP_COMP_END_BUT_DATAREMAIN);
                 }
@@ -414,6 +414,10 @@ static KAE_QUEUE_POOL_HEAD_S* kaezip_get_qp(int algtype)
             return g_kaezip_deflate_qp;
         }
         pthread_mutex_lock(&g_kaezip_deflate_pool_init_mutex);
+        if (g_kaezip_deflate_qp != NULL) {
+            pthread_mutex_unlock(&g_kaezip_deflate_pool_init_mutex);
+            return g_kaezip_deflate_qp;
+        }
         kaezip_queue_pool_destroy(g_kaezip_deflate_qp, kaezip_free_ctx);
         g_kaezip_deflate_qp = kaezip_init_queue_pool(algtype);
         pthread_mutex_unlock(&g_kaezip_deflate_pool_init_mutex);
@@ -424,6 +428,10 @@ static KAE_QUEUE_POOL_HEAD_S* kaezip_get_qp(int algtype)
             return g_kaezip_inflate_qp;
         }
         pthread_mutex_lock(&g_kaezip_inflate_pool_init_mutex);
+        if (g_kaezip_inflate_qp != NULL) {
+            pthread_mutex_unlock(&g_kaezip_inflate_pool_init_mutex);
+            return g_kaezip_inflate_qp;
+        }
         kaezip_queue_pool_destroy(g_kaezip_inflate_qp, kaezip_free_ctx);
         g_kaezip_inflate_qp = kaezip_init_queue_pool(algtype);
         pthread_mutex_unlock(&g_kaezip_inflate_pool_init_mutex);
